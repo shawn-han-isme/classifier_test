@@ -3,14 +3,13 @@
 #define DEBUG_PRINT_ARMORNUM
 #define DEBUG_CLASSIFIER_ORB
 
-#define SHOW_TEMPLATE_IMAGE
+// #define SHOW_TEMPLATE_IMAGE
 #define SHOW_CLASSIFIER_IMAGE
 #define DRAW_IMAGE_FEATURE_MATCH
 
 #define PRINT_CLASSIFIER_RUNTIME
 
 #define CLASSIFIER_OUTPUT
-
 
 #define CLASSIFIER_IMAGEPART_ROWS 100
 #define CLASSIFIER_IMAGEPART_COLS 120
@@ -30,7 +29,8 @@ int main()
 
     myTest.compare("../image/Test/*.png");
     
-    std::cout<<"> 分类器运行时间："<<timer.get()<<"ms"<< std::endl; //结束计时
+    std::cout<<std::endl;
+    std::cout<<"> myTest.compare运行时间："<<timer.get()<<"ms"<< std::endl; //结束计时
     std::cout<<std::endl;
     std::cout<<"total:"<<myTest.total<<std::endl;
     std::cout<<"good:"<<myTest.good<<std::endl;

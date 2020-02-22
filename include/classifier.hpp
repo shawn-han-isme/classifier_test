@@ -10,7 +10,7 @@ public:
     std::vector<cv::String> test_image_names;
 
 	double thresh_binar = 0.3; //二值化取thresh_binar最亮部分
-    int total, good, bad;
+    int total, good=0, bad=0;
     int maxGainArmor;
 
     classifierTrainer(std::string template_img_location);
@@ -29,6 +29,11 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
     for(int i=0;i<template_image_names.size();i++) //循环遍历所有文件
     {
         cv::Mat template_image = imread(template_image_names[i],0);
+        
+        #ifdef DEBUG_CLASSIFIER
+        std::cout << "读入" << template_image_names[i] << "号装甲板模板" << std::endl;
+        #endif
+
         if(!template_image.data)//检测图片是否读取成功
         {        
             std::cout<<"读取第"<<i+1<<"张图片错误，请确定目录下是否存在该图片"<<std::endl;
@@ -37,7 +42,7 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
         int threshold_int = sp::get_proportion_thresh(template_image, thresh_binar); //二值化模板图像
 
         #ifdef DEBUG
-        std::cout<<"threshold_int="<<threshold_int<<std::endl;
+        std::cout<<"template threshold_int="<<threshold_int<<std::endl;
         #endif
         
         if(threshold_int!=0)
@@ -47,10 +52,6 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
 
         cv::medianBlur(template_image, template_image, 3); //中值滤波
 		cv::resize(template_image, template_image, cv::Size(CLASSIFIER_IMAGEPART_COLS, CLASSIFIER_IMAGEPART_ROWS), (0,0), (0,0), CV_INTER_AREA); // 将模板图像的大小变成CLASSIFIER_IMAGEPART_COLS*CLASSIFIER_IMAGEPART_ROWS
-
-        #ifdef DEBUG_CLASSIFIER
-        std::cout << "读入" << template_image_names[i] << "号装甲板模板" << std::endl;
-        #endif
 
    		template_images.push_back(template_image);
     }
@@ -91,6 +92,8 @@ void classifierTrainer::compare(std::string test_img_loc)
         #endif
 
         cv::Mat test_image = imread(test_image_names[i],0);
+        cv::Mat test_image_copy;
+        test_image.copyTo(test_image_copy);
 
         int threshold_int;
         threshold_int = sp::get_proportion_thresh(test_image, thresh_binar); //二值化测试图像
@@ -127,10 +130,14 @@ void classifierTrainer::compare(std::string test_img_loc)
 //----------------------------------------------- 逐像素获取每个像素的gain并累积------------------------------------------------------------
         for(int template_count=0; template_count<template_images.size(); template_count++)
         {
+            #ifdef DEBUG_CLASSIFIER
+            std::cout << "遍历第" << template_count+1 << "个模板" << std::endl;
+            #endif
+
             for(int i=0; i<CLASSIFIER_IMAGEPART_ROWS; i++)
             {
                 //获取第i行首像素指针
-                uchar* p_template_image = template_images[i].ptr<uchar>(i);
+                uchar* p_template_image = template_images[template_count].ptr<uchar>(i);
                 uchar* p_test_image = test_image.ptr<uchar>(i);
 
                 //对第i行的每个像素（Byte）进行操作
@@ -151,7 +158,7 @@ void classifierTrainer::compare(std::string test_img_loc)
         gain_list.push_back(gain); //将gain加入gain_list
 
         #ifdef DEBUG_CLASSIFIER
-        std::cout << template_count << "号装甲板的gain是" << gain << std::endl; //打印gain
+        std::cout << template_count+1 << "号装甲板的gain是" << gain << std::endl; //打印gain
         #endif
 
         gain = 0; //重置gain
@@ -180,7 +187,7 @@ void classifierTrainer::compare(std::string test_img_loc)
 
             #ifdef CLASSIFIER_OUTPUT
             filePath = "../image/dst/negative/negative_1_"+count_classifier_str+".jpg";
-            cv::imwrite(filePath, test_image);
+            cv::imwrite(filePath, test_image_copy);
 
             #ifdef DEBUG_CLASSIFIER
             std::cout << "输出negative图片成功" << std::endl;
@@ -192,6 +199,7 @@ void classifierTrainer::compare(std::string test_img_loc)
             std::cout << "> 一级分类器运行时间：" << timer_classifier.get() << "ms" << std::endl; //结束计时
             #endif
 
+            bad++;
             gain_list.empty();
         }
         else
@@ -215,20 +223,21 @@ void classifierTrainer::compare(std::string test_img_loc)
                 #endif
 
                 #ifdef CLASSIFIER_OUTPUT
-                filePath = "../image/dst/positive/positive_"+count_classifier_str+".jpg";
-                cv::imwrite(filePath, test_image);
+                filePath = "../image/dst/positive/positive_#"+std::to_string(maxGainArmor)+"_"+count_classifier_str+".jpg";
+                cv::imwrite(filePath, test_image_copy);
                 #ifdef DEBUG_CLASSIFIER
                 std::cout << "输出positive图片成功" << std::endl;
                 #endif
                 #endif
 
+                good++;
                 gain_list.empty();
             }
             else
             {
                 #ifdef CLASSIFIER_OUTPUT
                 filePath = "../image/dst/negative/negative_2_"+count_classifier_str+".jpg";
-                cv::imwrite(filePath, test_image);
+                cv::imwrite(filePath, test_image_copy);
                 #ifdef DEBUG_CLASSIFIER
                 std::cout << "输出negative图片成功" << std::endl;
                 #endif
@@ -238,6 +247,7 @@ void classifierTrainer::compare(std::string test_img_loc)
                 std::cout << "> 一级分类器接受到ORB返回的false" << std::endl; 
                 #endif
                 
+                bad++;
                 gain_list.empty();
             }
     }
