@@ -1,9 +1,4 @@
-#include <proportion_thresh.hpp>
-#define CLASSIFIER_IMAGEPART_ROWS 100
-#define CLASSIFIER_IMAGEPART_COLS 120
-
-#define DEBUG
-
+// #include <proportion_thresh.hpp>
 
 class classifierTrainer
 {
@@ -52,11 +47,14 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
 
    		template_images.push_back(template_image);
     }
+
+    #ifdef SHOW_TEMPLATE_IMAGE
     for(int i=0;i<template_images.size();i++)
     {
         cv::imshow("img",template_images[i]);
         cv::waitKey(0);
     }
+    #endif
 }
 
 classifierTrainer::~classifierTrainer()
@@ -72,12 +70,16 @@ void classifierTrainer::compare(std::string test_img_loc)
     cv::glob(test_img_location, test_image_names); //将文件名放入test_image_names容器
     total = test_image_names.size();
 
-    for(int i=0;i<test_image_names.size();i++) //循环遍历所有文件
+    for(int i=0;i<test_image_names.size();i++) //循环遍历所有文件,开始分类
     {
+        #ifdef DEBUG
+        std::cout<<std::endl<<test_image_names[i]<<std::endl;
+        #endif
+
         cv::Mat test_image = imread(test_image_names[i],0);
 
         int threshold_int;
-		threshold_int = sp::get_proportion_thresh(test_image, test_image, 255, thresh_binar); //二值化模板图像
+        threshold_int = sp::get_proportion_thresh(test_image, test_image, 255, thresh_binar); //二值化模板图像
         
         #ifdef DEBUG
         std::cout<<"threshold_int="<<threshold_int<<std::endl;
@@ -86,8 +88,7 @@ void classifierTrainer::compare(std::string test_img_loc)
         cv::threshold(test_image, test_image, threshold_int, 255, CV_THRESH_BINARY);
 
         // 将模板图像的大小变成CLASSIFIER_IMAGEPART_COLS*CLASSIFIER_IMAGEPART_ROWS
-		cv::resize(test_image, test_image, cv::Size(CLASSIFIER_IMAGEPART_COLS, CLASSIFIER_IMAGEPART_ROWS), (0,0), (0,0), CV_INTER_AREA);
-    
+        cv::resize(test_image, test_image, cv::Size(CLASSIFIER_IMAGEPART_COLS, CLASSIFIER_IMAGEPART_ROWS), (0,0), (0,0), CV_INTER_AREA);
 
-    }
+    }  
 }

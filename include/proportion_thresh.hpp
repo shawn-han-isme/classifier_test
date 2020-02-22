@@ -38,7 +38,7 @@ namespace sp
         int threshold_int = (int)threshold;
 
         #ifdef DEBUG
-        std::cout << "han's threshold=" << threshold_int << std::endl; //打印计算得出的threshold
+        // std::cout << "han's threshold=" << threshold_int << std::endl; //打印计算得出的threshold
         #endif
 
         // cv::threshold(in, out, threshold_int, 255, CV_THRESH_BINARY);
