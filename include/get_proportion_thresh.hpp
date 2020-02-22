@@ -6,10 +6,10 @@
 
 namespace sp
 {
-    int get_proportion_thresh(const cv::Mat&, const cv::Mat&, double, double);
+    int get_proportion_thresh(const cv::Mat&, double);
     int get_threshold_(cv::Mat&, double);
     
-    int get_proportion_thresh(cv::Mat& in, cv::Mat& out, double max_val, double proportion) //han's proportion_thresh
+    int get_proportion_thresh(cv::Mat& in, double proportion) //han's proportion_thresh
     {
         int rows = in.rows;
         int cols = in.cols;
@@ -41,7 +41,6 @@ namespace sp
         // std::cout << "han's threshold=" << threshold_int << std::endl; //打印计算得出的threshold
         #endif
 
-        // cv::threshold(in, out, threshold_int, 255, CV_THRESH_BINARY);
         return threshold_int;
     }
 

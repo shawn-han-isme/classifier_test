@@ -1,13 +1,24 @@
 #define DEBUG
+#define DEBUG_CLASSIFIER
+#define DEBUG_PRINT_ARMORNUM
+#define DEBUG_CLASSIFIER_ORB
+
 // #define SHOW_TEMPLATE_IMAGE
+#define SHOW_CLASSIFIER_IMAGE
+
+#define PRINT_CLASSIFIER_RUNTIME
+
+// #define CLASSIFIER_OUTPUT
+
 
 #define CLASSIFIER_IMAGEPART_ROWS 100
 #define CLASSIFIER_IMAGEPART_COLS 120
 
 #include <opencv2/opencv.hpp>
-#include <proportion_thresh.hpp>
-#include <classifier.hpp>
+#include <get_proportion_thresh.hpp>
 #include <timer.hpp>
+#include <ORB_classifier.hpp>
+#include <classifier.hpp>
 
 int main()
 {
