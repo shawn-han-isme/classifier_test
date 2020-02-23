@@ -1,24 +1,5 @@
-#define DEBUG_CLASSIFIER
-#define DEBUG_PRINT_ARMORNUM
-#define DEBUG_CLASSIFIER_ORB
-
-#define FRAME_BY_FRAME
-// #define SHOW_TEMPLATE_IMAGE
-#define SHOW_CLASSIFIER_IMAGE
-#define DRAW_IMAGE_FEATURE_MATCH
-
-#define PRINT_CLASSIFIER_RUNTIME
-
-#define CLASSIFIER_OUTPUT
-
-#define CLASSIFIER_IMAGEPART_ROWS 100
-#define CLASSIFIER_IMAGEPART_COLS 120
-
 #include <opencv2/opencv.hpp>
-#include <get_proportion_thresh.hpp>
 #include <timer.hpp>
-#include <opencv2/xfeatures2d.hpp>
-
 #include <classifier.hpp>
 
 int main()
