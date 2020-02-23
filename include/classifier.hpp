@@ -11,7 +11,7 @@ public:
 
 	double thresh_binar = 0.3; //二值化取thresh_binar最亮部分
     int total, good=0, bad=0;
-    int maxGainArmor;
+    int maxGainArmor = -1;
 
     classifierTrainer(std::string template_img_location);
     ~classifierTrainer();
@@ -21,7 +21,7 @@ public:
 
 classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_location(template_img_loc)
 {
-    #ifdef DEBUG
+    #ifdef DEBUG_CLASSIFIER
     std::cout<<"ClassifierTrainer is being created"<<std::endl;
     #endif
 
@@ -41,7 +41,7 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
         
         int threshold_int = sp::get_proportion_thresh(template_image, thresh_binar); //二值化模板图像
 
-        #ifdef DEBUG
+        #ifdef DEBUG_CLASSIFIER
         std::cout<<"template threshold_int="<<threshold_int<<std::endl;
         #endif
         
@@ -67,7 +67,7 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
 
 classifierTrainer::~classifierTrainer()
 {
-    #ifdef DEBUG
+    #ifdef DEBUG_CLASSIFIER
     std::cout<<"ClassifierTrainer is being deleted"<<std::endl;
     #endif
 }
@@ -87,8 +87,11 @@ void classifierTrainer::compare(std::string test_img_loc)
     for(int i=0;i<test_image_names.size();i++) //循环遍历所有文件,开始分类
     {
 //----------------------------------------------------预处理测试图像--------------------------------------------------
-        #ifdef DEBUG
-        std::cout<<std::endl<<test_image_names[i]<<std::endl;
+        #ifdef DEBUG_CLASSIFIER
+        std::cout<<std::endl;
+        std::cout<<"------------------------------------------"<<std::endl;
+        std::cout<<">> "<<test_image_names[i]<<std::endl;
+        std::cout<<"maxGainArmor初始化:"<<maxGainArmor<<std::endl;
         #endif
 
         cv::Mat test_image = imread(test_image_names[i],0);
@@ -98,7 +101,7 @@ void classifierTrainer::compare(std::string test_img_loc)
         int threshold_int;
         threshold_int = sp::get_proportion_thresh(test_image, thresh_binar); //二值化测试图像
         
-        #ifdef DEBUG
+        #ifdef DEBUG_CLASSIFIER
         std::cout<<"test threshold_int="<<threshold_int<<std::endl;
         #endif
 
@@ -190,7 +193,7 @@ void classifierTrainer::compare(std::string test_img_loc)
             cv::imwrite(filePath, test_image_copy);
 
             #ifdef DEBUG_CLASSIFIER
-            std::cout << "输出negative图片成功" << std::endl;
+            std::cout << ">> 输出negative图片成功" << std::endl;
             #endif
 
             #endif
@@ -199,15 +202,23 @@ void classifierTrainer::compare(std::string test_img_loc)
             std::cout << "> 一级分类器运行时间：" << timer_classifier.get() << "ms" << std::endl; //结束计时
             #endif
 
+            #ifdef FRAME_BY_FRAME
+            cv::waitKey(0);
+            #endif
+
             bad++;
-            gain_list.empty();
+            maxGainArmor = -1;
+            gain_list.clear();
         }
         else
         {
             maxGainArmor = (max_element(gain_list.begin(),gain_list.end()) - gain_list.begin()) + 1;
 
             #ifdef DEBUG_PRINT_ARMORNUM
-            std::cout << "对应编号为" << maxGainArmor << "的装甲板" << std::endl;
+            if(maxGainArmor >= 0)
+            {
+                std::cout << ">> 一级分类器检测结果对应编号为" << maxGainArmor << "的装甲板" << std::endl <<std::endl;
+            }
             #endif
 
             #ifdef PRINT_CLASSIFIER_RUNTIME
@@ -226,12 +237,17 @@ void classifierTrainer::compare(std::string test_img_loc)
                 filePath = "../image/dst/positive/positive_#"+std::to_string(maxGainArmor)+"_"+count_classifier_str+".jpg";
                 cv::imwrite(filePath, test_image_copy);
                 #ifdef DEBUG_CLASSIFIER
-                std::cout << "输出positive图片成功" << std::endl;
+                std::cout << ">> 输出positive图片成功" << std::endl;
                 #endif
                 #endif
 
+                #ifdef FRAME_BY_FRAME
+                cv::waitKey(0);
+                #endif
+
                 good++;
-                gain_list.empty();
+                maxGainArmor = -1;
+                gain_list.clear();
             }
             else
             {
@@ -239,7 +255,7 @@ void classifierTrainer::compare(std::string test_img_loc)
                 filePath = "../image/dst/negative/negative_2_"+count_classifier_str+".jpg";
                 cv::imwrite(filePath, test_image_copy);
                 #ifdef DEBUG_CLASSIFIER
-                std::cout << "输出negative图片成功" << std::endl;
+                std::cout << ">> 输出negative图片成功" << std::endl;
                 #endif
                 #endif
                 
@@ -247,8 +263,13 @@ void classifierTrainer::compare(std::string test_img_loc)
                 std::cout << "> 一级分类器接受到ORB返回的false" << std::endl; 
                 #endif
                 
+                #ifdef FRAME_BY_FRAME
+                cv::waitKey(0);
+                #endif
+                
                 bad++;
-                gain_list.empty();
+                maxGainArmor = -1;
+                gain_list.clear();
             }
     }
     }  
@@ -293,8 +314,6 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
     }
     #endif
     
-
-    
     //【4】基于FLANN的描述符对象匹配
     std::vector<cv::DMatch> matches;
     // 初始化flann匹配
@@ -321,19 +340,20 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
     cv::Mat img_matches;
     cv::drawMatches(img2,keypoint_2,img1,keypoint_2,good_matches,img_matches);
 
-    //【13】输出相关匹配点信息
+
+    // // 【13】输出相关匹配点信息
     // for(int i=0;i<good_matches.size();i++)
     // {
     //     std::cout<<"> 符合条件的匹配点 "<<i<<" 特征点1："<<good_matches[i].queryIdx<<" -- 特征点2："<<good_matches[i].trainIdx<<std::endl;
     // }
-    
-    //【14】打印特征信息
-    
-    // std::cout<<"> img1检测到特征点"<<keypoint_1.size()<<"个"<<std::endl;
-    // std::cout<<"> img2检测到特征点"<<keypoint_2.size()<<"个"<<std::endl;
+
     #ifdef DEBUG_CLASSIFIER_ORB
+    //【14】打印特征信息
+    std::cout<<"> img1检测到特征点"<<keypoint_1.size()<<"个"<<std::endl;
+    std::cout<<"> img2检测到特征点"<<keypoint_2.size()<<"个"<<std::endl;
     std::cout<<"> 共匹配到特征点"<<good_matches.size()<<"对"<<std::endl;
     #endif
+
 
     //【15】绘制特征图像
     #ifdef DRAW_IMAGE_FEATURE_MATCH
@@ -373,7 +393,6 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
 
         #ifdef DEBUG_CLASSIFIER_ORB
         std::cout << "> ORB分类器出错:" << std::endl; 
-        // std::cout << "> ORB分类器出错:" << std::endl <<"> Standard exception: " << std::endl << e.what() << std::endl; 
         std::cout << "> ORB返回false" << std::endl;
         #endif
 

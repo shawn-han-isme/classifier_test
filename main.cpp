@@ -1,8 +1,8 @@
-#define DEBUG
 #define DEBUG_CLASSIFIER
 #define DEBUG_PRINT_ARMORNUM
 #define DEBUG_CLASSIFIER_ORB
 
+// #define FRAME_BY_FRAME
 // #define SHOW_TEMPLATE_IMAGE
 #define SHOW_CLASSIFIER_IMAGE
 #define DRAW_IMAGE_FEATURE_MATCH
@@ -31,7 +31,6 @@ int main()
     
     std::cout<<std::endl;
     std::cout<<"> myTest.compare运行时间："<<timer.get()<<"ms"<< std::endl; //结束计时
-    std::cout<<std::endl;
     std::cout<<"total:"<<myTest.total<<std::endl;
     std::cout<<"good:"<<myTest.good<<std::endl;
     std::cout<<"bad:"<<myTest.bad<<std::endl;
