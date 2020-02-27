@@ -4,11 +4,12 @@
 
 int main()
 {
-    classifierTrainer myTest("../image/Template/*.png");
+    classifierTrainer myTest("../image/Template_Image/*.png");
     sp::timer timer; //建立计时器
     timer.reset(); // 开始计时
 
-    myTest.compare("../image/Test/*.png");
+    myTest.compare("../image/Test_Image/*.png");
+    // myTest.compare("../image/Temperate/*.png");
     
     std::cout<<std::endl;
     std::cout<<"> myTest.compare运行时间："<<timer.get()<<"ms"<< std::endl; //结束计时

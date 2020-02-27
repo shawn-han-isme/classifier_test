@@ -1,18 +1,22 @@
-#define DEBUG_CLASSIFIER
-#define DEBUG_PRINT_ARMORNUM
-#define DEBUG_CLASSIFIER_ORB
-
 // #define FRAME_BY_FRAME
-// #define SHOW_TEMPLATE_IMAGE
-#define SHOW_CLASSIFIER_IMAGE
-#define DRAW_IMAGE_FEATURE_MATCH
+// #define SHOW_TEMPLATE_IMAGE_FRAME_BY_FRAME
 
-#define PRINT_CLASSIFIER_RUNTIME
+// #define DEBUG_CLASSIFIER
+// #define DEBUG_PRINT_ARMORNUM
+// #define DEBUG_CLASSIFIER_ORB
 
-#define CLASSIFIER_OUTPUT
+// #define SHOW_CLASSIFIER_IMAGE
+// #define DRAW_IMAGE_FEATURE_MATCH
+
+// #define PRINT_CLASSIFIER_RUNTIME
+
+// #define CLASSIFIER_OUTPUT
 
 #define CLASSIFIER_IMAGEPART_ROWS 100
 #define CLASSIFIER_IMAGEPART_COLS 120
+#define THRESH_BINAR_TEMPLATE 0.31 //二值化template_image取thresh_binar最亮部分
+#define THRESH_BINAR_TEST 0.35 //二值化test_image取thresh_binar最亮部分
+
 
 #include <opencv2/xfeatures2d.hpp>
 #include <timer.hpp>
@@ -28,15 +32,15 @@ public:
     std::vector<cv::Mat> template_images;
     std::string test_img_location;
     std::vector<cv::String> test_image_names;
+    std::string count_classifier_str; //用于输出图像的命名
 
-	double thresh_binar = 0.3; //二值化取thresh_binar最亮部分
     int total, good=0, bad=0;
     int maxGainArmor = -1;
 
     classifierTrainer(std::string template_img_location);
     ~classifierTrainer();
     void compare(std::string test_img_loc);
-    bool ORB_classifier_isok(const cv::Mat& img2);
+    bool ORB_classifier_isok(const cv::Mat& img2,int img_num);
 };
 
 classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_location(template_img_loc)
@@ -59,7 +63,7 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
             std::cout<<"读取第"<<i+1<<"张图片错误，请确定目录下是否存在该图片"<<std::endl;
         }
         
-        int threshold_int = sp::get_proportion_thresh(template_image, thresh_binar); //二值化模板图像
+        int threshold_int = sp::get_proportion_thresh(template_image, THRESH_BINAR_TEMPLATE); //二值化模板图像
 
         #ifdef DEBUG_CLASSIFIER
         std::cout<<"template threshold_int="<<threshold_int<<std::endl;
@@ -71,12 +75,13 @@ classifierTrainer::classifierTrainer(std::string template_img_loc):template_img_
         }
 
         cv::medianBlur(template_image, template_image, 3); //中值滤波
+
 		cv::resize(template_image, template_image, cv::Size(CLASSIFIER_IMAGEPART_COLS, CLASSIFIER_IMAGEPART_ROWS), (0,0), (0,0), CV_INTER_AREA); // 将模板图像的大小变成CLASSIFIER_IMAGEPART_COLS*CLASSIFIER_IMAGEPART_ROWS
 
    		template_images.push_back(template_image);
     }
 
-    #ifdef SHOW_TEMPLATE_IMAGE
+    #ifdef SHOW_TEMPLATE_IMAGE_FRAME_BY_FRAME
     for(int i=0;i<template_images.size();i++)
     {
         cv::imshow("img",template_images[i]);
@@ -119,7 +124,7 @@ void classifierTrainer::compare(std::string test_img_loc)
         test_image.copyTo(test_image_copy);
 
         int threshold_int;
-        threshold_int = sp::get_proportion_thresh(test_image, thresh_binar); //二值化测试图像
+        threshold_int = sp::get_proportion_thresh(test_image, THRESH_BINAR_TEST); //二值化测试图像
         
         #ifdef DEBUG_CLASSIFIER
         std::cout<<"test threshold_int="<<threshold_int<<std::endl;
@@ -130,8 +135,9 @@ void classifierTrainer::compare(std::string test_img_loc)
             cv::threshold(test_image, test_image, threshold_int, 255, CV_THRESH_BINARY);
         }
 
-        // 将模板图像的大小变成CLASSIFIER_IMAGEPART_COLS*CLASSIFIER_IMAGEPART_ROWS
-        cv::resize(test_image, test_image, cv::Size(CLASSIFIER_IMAGEPART_COLS, CLASSIFIER_IMAGEPART_ROWS), (0,0), (0,0), CV_INTER_AREA);
+        cv::medianBlur(test_image, test_image, 11); //中值滤波
+        
+        cv::resize(test_image, test_image, cv::Size(CLASSIFIER_IMAGEPART_COLS, CLASSIFIER_IMAGEPART_ROWS), (0,0), (0,0), CV_INTER_AREA); // 将测试图像的大小变成CLASSIFIER_IMAGEPART_COLS*CLASSIFIER_IMAGEPART_ROWS
 
         #ifdef SHOW_CLASSIFIER_IMAGE
         cv::imshow("CLASSIFIER_IMAGE", test_image);
@@ -200,7 +206,7 @@ void classifierTrainer::compare(std::string test_img_loc)
         filePath.clear();
         sp::timer timer_now;
         long long int count_classifier_int(timer_now.getTimeStamp());
-        std::string count_classifier_str = std::to_string(count_classifier_int);
+        count_classifier_str = std::to_string(count_classifier_int);
 
         if(*max<1000)
         {
@@ -209,7 +215,7 @@ void classifierTrainer::compare(std::string test_img_loc)
             #endif
 
             #ifdef CLASSIFIER_OUTPUT
-            filePath = "../image/dst/negative/negative_1_"+count_classifier_str+".jpg";
+            filePath = "../image/dst/negative/negative_1_"+test_image_names[i].substr(14)+"_"+count_classifier_str+".jpg";
             cv::imwrite(filePath, test_image_copy);
 
             #ifdef DEBUG_CLASSIFIER
@@ -219,6 +225,7 @@ void classifierTrainer::compare(std::string test_img_loc)
             #endif
 
             #ifdef PRINT_CLASSIFIER_RUNTIME
+            std::cout << std::endl;
             std::cout << "> 一级分类器运行时间：" << timer_classifier.get() << "ms" << std::endl; //结束计时
             #endif
 
@@ -242,11 +249,12 @@ void classifierTrainer::compare(std::string test_img_loc)
             #endif
 
             #ifdef PRINT_CLASSIFIER_RUNTIME
+            std::cout << std::endl;
             std::cout << "> 一级分类器运行时间：" << timer_classifier.get() << "ms" << std::endl; //结束计时
             #endif
 
 //-----------------------------------------------引入二级ORB分类器------------------------------
-            if(ORB_classifier_isok(test_image) //使用ORB分类器
+            if(ORB_classifier_isok(test_image,i) //使用ORB分类器
             )
             {
                 #ifdef DEBUG_CLASSIFIER_ORB
@@ -254,7 +262,7 @@ void classifierTrainer::compare(std::string test_img_loc)
                 #endif
 
                 #ifdef CLASSIFIER_OUTPUT
-                filePath = "../image/dst/positive/positive_#"+std::to_string(maxGainArmor)+"_"+count_classifier_str+".jpg";
+                filePath = "../image/dst/positive/positive_#"+std::to_string(maxGainArmor)+"_"+test_image_names[i].substr(14)+"_"+count_classifier_str+".jpg";
                 cv::imwrite(filePath, test_image_copy);
                 #ifdef DEBUG_CLASSIFIER
                 std::cout << ">> 输出positive图片成功" << std::endl;
@@ -272,7 +280,7 @@ void classifierTrainer::compare(std::string test_img_loc)
             else
             {
                 #ifdef CLASSIFIER_OUTPUT
-                filePath = "../image/dst/negative/negative_2_"+count_classifier_str+".jpg";
+                filePath = "../image/dst/negative/negative_2_"+test_image_names[i].substr(14)+"_"+count_classifier_str+".jpg";
                 cv::imwrite(filePath, test_image_copy);
                 #ifdef DEBUG_CLASSIFIER
                 std::cout << ">> 输出negative图片成功" << std::endl;
@@ -295,7 +303,7 @@ void classifierTrainer::compare(std::string test_img_loc)
     }  
 }
 
-bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
+bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2,int img_num)
 {
     #ifdef PRINT_CLASSIFIER_RUNTIME
     sp::timer timer_classifier_orb; //建立计时器
@@ -311,8 +319,6 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
     {
         std::cout<<"读取图片错误，请确定目录下是否存在该图片"<<std::endl;
     }
-    // cv::medianBlur(img1, img1, 3); //中值滤波
-    // cv::medianBlur(img2, img2, 3); //中值滤波
 
     //【2】定义需要用到的变量和类
     cv::Ptr<cv::ORB> detector = cv::ORB::create(200,1.2); //定义一个ORB特征检测类对象detector
@@ -386,11 +392,21 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
     // cv::waitKey(0);
     #endif
 
-    if(good_matches.size()>1)
+    if(good_matches.size()>0)
     {
         #ifdef PRINT_CLASSIFIER_RUNTIME
 	    std::cout << "> 二级分类器运行时间：" << timer_classifier_orb.get() << "ms" << std::endl; //结束计时
 		#endif
+
+        #ifdef CLASSIFIER_OUTPUT
+        std::string filePath;
+        filePath.clear();
+        filePath = "../image/dst/orb/positiveMatch/positiveMatch_"+test_image_names[img_num].substr(14)+"_"+count_classifier_str+".jpg";
+        cv::imwrite(filePath, img_matches);
+        #ifdef DEBUG_CLASSIFIER
+        std::cout << ">> 输出positive orb图片成功" << std::endl;
+        #endif
+        #endif
 
         return true;
     }
@@ -399,6 +415,16 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2)
         #ifdef PRINT_CLASSIFIER_RUNTIME
 	    std::cout << "> 二级分类器运行时间：" << timer_classifier_orb.get() << "ms" << std::endl; //结束计时
 		#endif
+
+        #ifdef CLASSIFIER_OUTPUT
+        std::string filePath;
+        filePath.clear();
+        filePath = "../image/dst/orb/negativeMatch/negativeMatch_"+test_image_names[img_num].substr(14)+"_"+count_classifier_str+".jpg";
+        cv::imwrite(filePath, img_matches);
+        #ifdef DEBUG_CLASSIFIER
+        std::cout << ">> 输出negative orb图片成功" << std::endl;
+        #endif
+        #endif
         
         return false;
     }
