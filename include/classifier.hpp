@@ -10,7 +10,7 @@
 
 // #define PRINT_CLASSIFIER_RUNTIME
 
-// #define CLASSIFIER_OUTPUT
+#define CLASSIFIER_OUTPUT
 
 #define CLASSIFIER_IMAGEPART_ROWS 100
 #define CLASSIFIER_IMAGEPART_COLS 120
@@ -206,9 +206,10 @@ void classifierTrainer::compare(std::string test_img_loc)
         filePath.clear();
         sp::timer timer_now;
         long long int count_classifier_int(timer_now.getTimeStamp());
+        count_classifier_str.clear();
         count_classifier_str = std::to_string(count_classifier_int);
 
-        if(*max<1000)
+        if(*max<500)
         {
             #ifdef DEBUG_CLASSIFIER
             std::cout << "舍弃" << std::endl;
@@ -389,7 +390,6 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2,int img_num)
     cv::imshow("> 特征点检测效果图1",img1_keypoint);
     cv::imshow("> 特征点检测效果图2",img2_keypoint);
     cv::imshow("匹配效果图",img_matches);
-    // cv::waitKey(0);
     #endif
 
     if(good_matches.size()>0)
@@ -399,10 +399,10 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2,int img_num)
 		#endif
 
         #ifdef CLASSIFIER_OUTPUT
-        std::string filePath;
-        filePath.clear();
-        filePath = "../image/dst/orb/positiveMatch/positiveMatch_"+test_image_names[img_num].substr(14)+"_"+count_classifier_str+".jpg";
-        cv::imwrite(filePath, img_matches);
+        std::string filePath_orb;
+        filePath_orb.clear();
+        filePath_orb = "../image/dst/orb/positiveMatch/positiveMatch_"+test_image_names[img_num].substr(14)+"_"+count_classifier_str+".jpg";
+        cv::imwrite(filePath_orb, img_matches);
         #ifdef DEBUG_CLASSIFIER
         std::cout << ">> 输出positive orb图片成功" << std::endl;
         #endif
@@ -417,10 +417,10 @@ bool classifierTrainer::ORB_classifier_isok(const cv::Mat& img2,int img_num)
 		#endif
 
         #ifdef CLASSIFIER_OUTPUT
-        std::string filePath;
-        filePath.clear();
-        filePath = "../image/dst/orb/negativeMatch/negativeMatch_"+test_image_names[img_num].substr(14)+"_"+count_classifier_str+".jpg";
-        cv::imwrite(filePath, img_matches);
+        std::string filePath_orb;
+        filePath_orb.clear();
+        filePath_orb = "../image/dst/orb/negativeMatch/negativeMatch_"+test_image_names[img_num].substr(14)+"_"+count_classifier_str+".jpg";
+        cv::imwrite(filePath_orb, img_matches);
         #ifdef DEBUG_CLASSIFIER
         std::cout << ">> 输出negative orb图片成功" << std::endl;
         #endif
